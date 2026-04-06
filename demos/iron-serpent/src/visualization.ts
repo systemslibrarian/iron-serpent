@@ -153,7 +153,7 @@ export function renderVisualization(container: HTMLElement): void {
     // Legend
     const ly = svgHeight - 65;
     const legendItems = [
-      { color: '#c9a227', label: 'Attacked rounds (Serpent)' },
+      { color: '#d4a72c', label: 'Attacked rounds (Serpent)' },
       { color: '#4a90d9', label: 'Attacked rounds (AES)' },
       { color: '#2d6a4f', label: 'Unbroken margin' },
       { color: '#ff4444', label: 'Attack frontier' },

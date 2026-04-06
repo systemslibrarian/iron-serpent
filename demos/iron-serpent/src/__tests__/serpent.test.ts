@@ -228,6 +228,12 @@ describe('Serpent-256-CTR', () => {
       )
     ).rejects.toThrow('Invalid encrypted payload: base64 field could not be decoded');
   });
+
+  it('rejects empty plaintext on encrypt', async () => {
+    await expect(
+      encrypt(new Uint8Array(0), new TextEncoder().encode('passphrase'))
+    ).rejects.toThrow('Plaintext must not be empty');
+  });
 });
 
 describe('HMAC-SHA256 (mac.ts)', () => {

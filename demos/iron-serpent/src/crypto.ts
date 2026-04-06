@@ -89,6 +89,9 @@ function assertDecodedLengths(salt: Uint8Array, nonce: Uint8Array, mac: Uint8Arr
 }
 
 export async function encrypt(plaintext: Uint8Array, passphrase: Uint8Array): Promise<EncryptedPayload> {
+  if (plaintext.length === 0) {
+    throw new Error('Plaintext must not be empty');
+  }
   const salt = generateSalt();
   const nonce = new Uint8Array(16);
   crypto.getRandomValues(nonce);

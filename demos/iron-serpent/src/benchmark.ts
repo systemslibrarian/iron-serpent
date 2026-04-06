@@ -49,14 +49,18 @@ export async function runBenchmark(
 
   // --- Serpent-256-CTR benchmark ---
   onProgress?.('Warming up Serpent-256-CTR (WASM JIT)…');
+  const warmupNonce = new Uint8Array(16);
+  crypto.getRandomValues(warmupNonce);
   const warmupCtr = new SerpentCTR();
-  warmupCtr.encrypt(key32, nonce16, data);
+  warmupCtr.encrypt(key32, warmupNonce, data);
   warmupCtr.dispose();
   onProgress?.('Serpent-256-CTR warm-up done');
 
   onProgress?.(`Serpent-256-CTR — starting ${iterations} × ${dataSizeLabel} runs…`);
   const serpentTimes: number[] = [];
   for (let i = 0; i < iterations; i++) {
+    // Fresh nonce per iteration — matches AES benchmark behavior
+    crypto.getRandomValues(nonce16);
     const ctr = new SerpentCTR();
     const start = performance.now();
     ctr.encrypt(key32, nonce16, data);
@@ -70,10 +74,12 @@ export async function runBenchmark(
 
   // --- AES-256-GCM benchmark ---
   const aesKey = await crypto.subtle.importKey('raw', key32.slice().buffer as ArrayBuffer, 'AES-GCM', false, ['encrypt']);
+  // Pre-copy data buffer once — avoids a 1–16 MB allocation inside the timed region
+  const dataBuffer = data.slice().buffer as ArrayBuffer;
   onProgress?.('Warming up AES-256-GCM (Web Crypto)…');
   const warmupIv = new Uint8Array(12);
   crypto.getRandomValues(warmupIv);
-  await crypto.subtle.encrypt({ name: 'AES-GCM', iv: warmupIv.buffer as ArrayBuffer }, aesKey, data.slice().buffer as ArrayBuffer);
+  await crypto.subtle.encrypt({ name: 'AES-GCM', iv: warmupIv.buffer as ArrayBuffer }, aesKey, dataBuffer);
   onProgress?.('AES-256-GCM warm-up done');
 
   onProgress?.(`AES-256-GCM — starting ${iterations} × ${dataSizeLabel} runs…`);
@@ -82,7 +88,7 @@ export async function runBenchmark(
     const iv = new Uint8Array(12);
     crypto.getRandomValues(iv);
     const start = performance.now();
-    await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv.buffer as ArrayBuffer }, aesKey, data.slice().buffer as ArrayBuffer);
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv.buffer as ArrayBuffer }, aesKey, dataBuffer);
     const elapsed = performance.now() - start;
     aesTimes.push(elapsed);
     onProgress?.(`AES-256-GCM — run ${i + 1} / ${iterations} (${elapsed.toFixed(1)} ms)`);
