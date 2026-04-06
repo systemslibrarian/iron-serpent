@@ -38,7 +38,7 @@ export function generateSalt(): Uint8Array {
   return salt;
 }
 
-export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<Uint8Array> {
+export async function deriveKey(passphrase: Uint8Array, salt: Uint8Array): Promise<Uint8Array> {
   if (salt.length !== KDF_PARAMS.saltLength) {
     throw new Error(`Salt must be ${KDF_PARAMS.saltLength} bytes`);
   }
@@ -58,6 +58,7 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<U
   }
 
   // Browser: offload to a classic Worker so the UI thread stays responsive.
+  // Transfer passphrase and salt as byte arrays — no strings cross the boundary.
   return new Promise<Uint8Array>((resolve, reject) => {
     const worker = new Worker(`${import.meta.env.BASE_URL}kdf-worker.js`);
     worker.onmessage = (e: MessageEvent<{ hash: number[] } | { error: string }>) => {
@@ -72,6 +73,6 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<U
       worker.terminate();
       reject(new Error(e.message));
     };
-    worker.postMessage({ passphrase, salt: Array.from(salt) });
+    worker.postMessage({ passphrase: Array.from(passphrase), salt: Array.from(salt) });
   });
 }

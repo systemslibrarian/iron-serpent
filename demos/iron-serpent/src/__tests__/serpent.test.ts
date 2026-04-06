@@ -194,7 +194,7 @@ describe('Serpent-256-CTR', () => {
   });
 
   it('rejects a tampered ciphertext before any decryption attempt', async () => {
-    const payload = await encrypt('Tamper detection must fail closed.', 'correct horse battery staple');
+    const payload = await encrypt(new TextEncoder().encode('Tamper detection must fail closed.'), new TextEncoder().encode('correct horse battery staple'));
     const ciphertext = Uint8Array.from(atob(payload.ciphertext), (char) => char.charCodeAt(0));
 
     ciphertext[0] ^= 0x01;
@@ -209,7 +209,7 @@ describe('Serpent-256-CTR', () => {
       ciphertext: btoa(tamperedBinary),
     };
 
-    await expect(decrypt(tamperedPayload, 'correct horse battery staple')).rejects.toThrow(
+    await expect(decrypt(tamperedPayload, new TextEncoder().encode('correct horse battery staple'))).rejects.toThrow(
       'Authentication failed — ciphertext has been tampered with'
     );
   });
@@ -224,7 +224,7 @@ describe('Serpent-256-CTR', () => {
           mac: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHw==',
           version: 'iron-serpent-v1',
         },
-        'passphrase'
+        new TextEncoder().encode('passphrase')
       )
     ).rejects.toThrow('Invalid encrypted payload: base64 field could not be decoded');
   });
@@ -276,32 +276,32 @@ describe('KDF (kdf.ts)', () => {
 
   it('deriveKey returns a 32-byte key', async () => {
     const salt = new Uint8Array(16).fill(0xaa);
-    const key = await deriveKey('test-passphrase', salt);
+    const key = await deriveKey(new TextEncoder().encode('test-passphrase'), salt);
     expect(key).toBeInstanceOf(Uint8Array);
     expect(key.length).toBe(32);
   });
 
   it('deriveKey is deterministic for the same inputs', async () => {
     const salt = new Uint8Array(16).fill(0xbb);
-    const key1 = await deriveKey('same-pass', salt);
-    const key2 = await deriveKey('same-pass', salt);
+    const key1 = await deriveKey(new TextEncoder().encode('same-pass'), salt);
+    const key2 = await deriveKey(new TextEncoder().encode('same-pass'), salt);
     expect(key1).toEqual(key2);
   });
 
   it('deriveKey produces different output for different passphrases', async () => {
     const salt = new Uint8Array(16).fill(0xcc);
-    const key1 = await deriveKey('pass-one', salt);
-    const key2 = await deriveKey('pass-two', salt);
+    const key1 = await deriveKey(new TextEncoder().encode('pass-one'), salt);
+    const key2 = await deriveKey(new TextEncoder().encode('pass-two'), salt);
     expect(key1).not.toEqual(key2);
   });
 
   it('deriveKey produces different output for different salts', async () => {
-    const key1 = await deriveKey('same', new Uint8Array(16).fill(0x01));
-    const key2 = await deriveKey('same', new Uint8Array(16).fill(0x02));
+    const key1 = await deriveKey(new TextEncoder().encode('same'), new Uint8Array(16).fill(0x01));
+    const key2 = await deriveKey(new TextEncoder().encode('same'), new Uint8Array(16).fill(0x02));
     expect(key1).not.toEqual(key2);
   });
 
   it('deriveKey rejects a salt of wrong length', async () => {
-    await expect(deriveKey('pass', new Uint8Array(8))).rejects.toThrow('Salt must be 16 bytes');
+    await expect(deriveKey(new TextEncoder().encode('pass'), new Uint8Array(8))).rejects.toThrow('Salt must be 16 bytes');
   });
 });

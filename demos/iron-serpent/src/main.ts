@@ -58,15 +58,21 @@ async function init() {
     const text = ($('enc-input') as HTMLTextAreaElement).value;
     if (!pass || !text) return;
 
+    // Encode to bytes at the UI boundary — crypto layer never sees strings
+    const passBytes = new TextEncoder().encode(pass);
+    const plainBytes = new TextEncoder().encode(text);
+
     const btn = $('enc-btn') as HTMLButtonElement;
     btn.disabled = true;
     btn.textContent = 'Encrypting (32 rounds per block)…';
     try {
-      lastPayload = await encrypt(text, pass);
+      lastPayload = await encrypt(plainBytes, passBytes);
       ($('enc-output') as HTMLTextAreaElement).value = formatPayload(lastPayload, outputFormat);
     } catch (e) {
       ($('enc-output') as HTMLTextAreaElement).value = `Error: ${e instanceof Error ? e.message : e}`;
     } finally {
+      passBytes.fill(0);
+      plainBytes.fill(0);
       btn.disabled = false;
       btn.textContent = 'Encrypt (full 32 rounds)';
     }
@@ -103,6 +109,9 @@ async function init() {
     const input = ($('dec-input') as HTMLTextAreaElement).value;
     if (!pass || !input) return;
 
+    // Encode passphrase to bytes at the UI boundary
+    const passBytes = new TextEncoder().encode(pass);
+
     const btn = $('dec-btn') as HTMLButtonElement;
     btn.disabled = true;
     btn.textContent = 'Decrypting (32 rounds per block)…';
@@ -110,8 +119,10 @@ async function init() {
 
     try {
       const payload: EncryptedPayload = JSON.parse(input);
-      const result = await decrypt(payload, pass);
-      ($('dec-output') as HTMLTextAreaElement).value = result;
+      const resultBytes = await decrypt(payload, passBytes);
+      // Decode bytes to string for display, then zero the bytes
+      ($('dec-output') as HTMLTextAreaElement).value = new TextDecoder().decode(resultBytes);
+      resultBytes.fill(0);
       badge.textContent = '✓ Authenticated';
       badge.className = 'badge verified';
     } catch (e) {
@@ -128,6 +139,7 @@ async function init() {
         badge.className = 'badge failed';
       }
     } finally {
+      passBytes.fill(0);
       btn.disabled = false;
       btn.textContent = 'Decrypt (full 32 rounds)';
     }

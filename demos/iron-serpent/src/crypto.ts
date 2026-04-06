@@ -1,9 +1,16 @@
 /**
  * Serpent-256-CTR encrypt/decrypt pipeline with Argon2id KDF and HMAC-SHA256 authentication.
  *
+ * Security boundary: this module operates exclusively on Uint8Array.
+ * No plaintext or passphrase ever exists as a JS string inside this layer.
+ * Strings are immutable and GC-managed — they cannot be zeroed.
+ * The caller (UI layer) is responsible for encoding strings to bytes
+ * and zeroing those bytes after use.
+ *
  * Flow:
- * Encrypt: passphrase → Argon2id → encKey → Serpent-256-CTR encrypt → HMAC-SHA256 tag
- * Decrypt: verify HMAC first → Serpent-256-CTR decrypt
+ * Encrypt: passphrase bytes → Argon2id → masterKey → HKDF → encKey + macKey
+ *          plaintext bytes → Serpent-256-CTR encrypt → HMAC-SHA256 tag
+ * Decrypt: verify HMAC first → Serpent-256-CTR decrypt → plaintext bytes
  */
 import { SerpentCTR } from './serpent-ctr';
 import { deriveKey, generateSalt } from './kdf';
@@ -81,7 +88,7 @@ function assertDecodedLengths(salt: Uint8Array, nonce: Uint8Array, mac: Uint8Arr
   }
 }
 
-export async function encrypt(plaintext: string, passphrase: string): Promise<EncryptedPayload> {
+export async function encrypt(plaintext: Uint8Array, passphrase: Uint8Array): Promise<EncryptedPayload> {
   const salt = generateSalt();
   const nonce = new Uint8Array(16);
   crypto.getRandomValues(nonce);
@@ -92,15 +99,13 @@ export async function encrypt(plaintext: string, passphrase: string): Promise<En
   const macKey = await deriveMACKey(masterKey);
   masterKey.fill(0);
 
-  const plaintextBytes = new TextEncoder().encode(plaintext);
   const ctr = new SerpentCTR();
   let ciphertextBytes: Uint8Array<ArrayBufferLike> = new Uint8Array(0);
   try {
-    ciphertextBytes = ctr.encrypt(encKey, nonce, plaintextBytes);
+    ciphertextBytes = ctr.encrypt(encKey, nonce, plaintext);
   } finally {
     ctr.dispose();
     encKey.fill(0);
-    plaintextBytes.fill(0);
   }
 
   const versionBytes = new TextEncoder().encode(PAYLOAD_VERSION);
@@ -116,7 +121,7 @@ export async function encrypt(plaintext: string, passphrase: string): Promise<En
   };
 }
 
-export async function decrypt(payload: EncryptedPayload, passphrase: string): Promise<string> {
+export async function decrypt(payload: EncryptedPayload, passphrase: Uint8Array): Promise<Uint8Array> {
   assertPayloadShape(payload);
 
   const salt = fromBase64(payload.salt);
@@ -150,7 +155,5 @@ export async function decrypt(payload: EncryptedPayload, passphrase: string): Pr
     encKey.fill(0);
   }
 
-  const result = new TextDecoder().decode(plaintextBytes);
-  plaintextBytes.fill(0);
-  return result;
+  return new Uint8Array(plaintextBytes);
 }

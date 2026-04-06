@@ -7,7 +7,7 @@
 importScripts(new URL('argon2-bundled.min.js', self.location.href).href);
 
 self.onmessage = async function (e) {
-  var passphrase = e.data.passphrase;
+  var passphrase = new Uint8Array(e.data.passphrase);
   var salt = new Uint8Array(e.data.salt);
   try {
     var result = await argon2.hash({
