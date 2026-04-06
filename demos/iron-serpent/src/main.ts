@@ -140,24 +140,36 @@ async function init() {
   $('bench-btn').addEventListener('click', async () => {
     const btn = $('bench-btn') as HTMLButtonElement;
     btn.disabled = true;
-    const progress = $('bench-progress');
+    const progressWrap = $('bench-progress');
+    const progressText = $('bench-progress-text');
+    const progressFill = $('bench-progress-fill');
     const results = $('bench-results');
-    progress.classList.remove('hidden');
+    progressWrap.classList.remove('hidden');
     results.classList.add('hidden');
+
+    // phase 0: warmup serpent (2 steps) + 10 runs serpent = 12
+    // phase 1: warmup aes (2 steps) + 10 runs aes = 12  → total 24 steps
+    const TOTAL_STEPS = 24;
+    let step = 0;
+    function advance(label: string) {
+      step++;
+      progressText.textContent = label;
+      progressFill.style.width = `${Math.round((step / TOTAL_STEPS) * 100)}%`;
+    }
 
     try {
       const r = await runBenchmark((msg) => {
-        progress.textContent = msg;
+        advance(msg);
       });
       $('bench-serpent').textContent = `${r.serpentMBps.toFixed(1)} MB/s`;
       $('bench-aes').textContent = `${r.aesMBps.toFixed(1)} MB/s`;
       $('bench-ratio').textContent = `AES is ${r.ratio.toFixed(1)}× faster`;
       results.classList.remove('hidden');
     } catch (e) {
-      progress.textContent = `Benchmark error: ${e instanceof Error ? e.message : e}`;
+      progressText.textContent = `Benchmark error: ${e instanceof Error ? e.message : e}`;
     } finally {
       btn.disabled = false;
-      progress.classList.add('hidden');
+      progressWrap.classList.add('hidden');
     }
   });
 }

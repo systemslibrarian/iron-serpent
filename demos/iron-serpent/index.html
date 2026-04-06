@@ -94,18 +94,23 @@
           This comparison reflects real-world browser performance, not purely algorithmic speed.
         </p>
         <button id="bench-btn" class="primary-btn">Run Benchmark</button>
-        <div id="bench-progress" class="hidden"></div>
+        <p class="bench-desc">Encrypts 1 MB of random data 10 times with each cipher and reports average throughput. Takes ~5–15 seconds depending on device.</p>
+        <div id="bench-progress" class="hidden">
+          <span id="bench-progress-text"></span>
+          <div class="bench-progress-bar"><div id="bench-progress-fill"></div></div>
+        </div>
         <div id="bench-results" class="hidden">
+          <p class="bench-meta">Average throughput across 10 runs · 1 MB random plaintext per run</p>
           <div class="bench-row">
-            <span class="bench-label">Serpent-256-CTR</span>
+            <span class="bench-label">Serpent-256-CTR <span class="bench-sublabel">(WASM, no hardware accel)</span></span>
             <span id="bench-serpent" class="bench-value">—</span>
           </div>
           <div class="bench-row">
-            <span class="bench-label">AES-256-GCM</span>
+            <span class="bench-label">AES-256-GCM <span class="bench-sublabel">(Web Crypto, AES-NI accelerated)</span></span>
             <span id="bench-aes" class="bench-value">—</span>
           </div>
           <div class="bench-row">
-            <span class="bench-label">Ratio</span>
+            <span class="bench-label">Speed ratio <span class="bench-sublabel">(how much faster AES is)</span></span>
             <span id="bench-ratio" class="bench-value">—</span>
           </div>
           <blockquote class="bench-callout">

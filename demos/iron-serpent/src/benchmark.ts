@@ -37,12 +37,13 @@ export async function runBenchmark(
   crypto.getRandomValues(nonce16);
 
   // --- Serpent-256-CTR benchmark ---
-  onProgress?.('Warming up Serpent-256-CTR...');
+  onProgress?.('Warming up Serpent-256-CTR (WASM JIT)…');
   const warmupCtr = new SerpentCTR();
   warmupCtr.encrypt(key32, nonce16, data);
   warmupCtr.dispose();
+  onProgress?.('Serpent-256-CTR warm-up done');
 
-  onProgress?.('Benchmarking Serpent-256-CTR...');
+  onProgress?.('Serpent-256-CTR — starting 10 runs…');
   const serpentTimes: number[] = [];
   for (let i = 0; i < iterations; i++) {
     const ctr = new SerpentCTR();
@@ -51,19 +52,20 @@ export async function runBenchmark(
     const elapsed = performance.now() - start;
     serpentTimes.push(elapsed);
     ctr.dispose();
-    onProgress?.(`Serpent iteration ${i + 1}/${iterations}: ${elapsed.toFixed(1)}ms`);
+    onProgress?.(`Serpent-256-CTR — run ${i + 1} / ${iterations} (${elapsed.toFixed(1)} ms)`);
   }
   const serpentAvgMs = serpentTimes.reduce((a, b) => a + b, 0) / iterations;
   const serpentMBps = (dataSize / (1024 * 1024)) / (serpentAvgMs / 1000);
 
   // --- AES-256-GCM benchmark ---
   const aesKey = await crypto.subtle.importKey('raw', key32.slice().buffer as ArrayBuffer, 'AES-GCM', false, ['encrypt']);
-  onProgress?.('Warming up AES-256-GCM...');
+  onProgress?.('Warming up AES-256-GCM (Web Crypto)…');
   const warmupIv = new Uint8Array(12);
   crypto.getRandomValues(warmupIv);
   await crypto.subtle.encrypt({ name: 'AES-GCM', iv: warmupIv.buffer as ArrayBuffer }, aesKey, data.slice().buffer as ArrayBuffer);
+  onProgress?.('AES-256-GCM warm-up done');
 
-  onProgress?.('Benchmarking AES-256-GCM (Web Crypto)...');
+  onProgress?.('AES-256-GCM — starting 10 runs…');
   const aesTimes: number[] = [];
   for (let i = 0; i < iterations; i++) {
     const iv = new Uint8Array(12);
@@ -72,7 +74,7 @@ export async function runBenchmark(
     await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv.buffer as ArrayBuffer }, aesKey, data.slice().buffer as ArrayBuffer);
     const elapsed = performance.now() - start;
     aesTimes.push(elapsed);
-    onProgress?.(`AES iteration ${i + 1}/${iterations}: ${elapsed.toFixed(1)}ms`);
+    onProgress?.(`AES-256-GCM — run ${i + 1} / ${iterations} (${elapsed.toFixed(1)} ms)`);
   }
   const aesAvgMs = aesTimes.reduce((a, b) => a + b, 0) / iterations;
   const aesMBps = (dataSize / (1024 * 1024)) / (aesAvgMs / 1000);
