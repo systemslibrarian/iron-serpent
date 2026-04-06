@@ -42,14 +42,36 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<U
   if (salt.length !== KDF_PARAMS.saltLength) {
     throw new Error(`Salt must be ${KDF_PARAMS.saltLength} bytes`);
   }
-  const result = await argon2.hash({
-    pass: passphrase,
-    salt,
-    type: argon2.ArgonType.Argon2id,
-    time: KDF_PARAMS.timeCost,
-    mem: KDF_PARAMS.memoryCost,
-    parallelism: KDF_PARAMS.parallelism,
-    hashLen: KDF_PARAMS.hashLength,
+
+  // Node / test environments have no Worker API — call the global stub directly.
+  if (typeof Worker === 'undefined') {
+    const result = await argon2.hash({
+      pass: passphrase,
+      salt,
+      type: argon2.ArgonType.Argon2id,
+      time: KDF_PARAMS.timeCost,
+      mem: KDF_PARAMS.memoryCost,
+      parallelism: KDF_PARAMS.parallelism,
+      hashLen: KDF_PARAMS.hashLength,
+    });
+    return result.hash;
+  }
+
+  // Browser: offload to a classic Worker so the UI thread stays responsive.
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const worker = new Worker('/kdf-worker.js');
+    worker.onmessage = (e: MessageEvent<{ hash: number[] } | { error: string }>) => {
+      worker.terminate();
+      if ('error' in e.data) {
+        reject(new Error(e.data.error));
+      } else {
+        resolve(new Uint8Array(e.data.hash));
+      }
+    };
+    worker.onerror = (e: ErrorEvent) => {
+      worker.terminate();
+      reject(new Error(e.message));
+    };
+    worker.postMessage({ passphrase, salt: Array.from(salt) });
   });
-  return result.hash;
 }

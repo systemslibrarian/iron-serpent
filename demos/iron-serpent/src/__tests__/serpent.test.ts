@@ -8,6 +8,26 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initSerpent, Serpent256 } from '../serpent';
 import { SerpentCTR } from '../serpent-ctr';
+import { decrypt, encrypt } from '../crypto';
+import { deriveMACKey, computeMAC, verifyMAC } from '../mac';
+import { deriveKey } from '../kdf';
+
+interface Argon2Stub {
+  ArgonType: {
+    Argon2d: number;
+    Argon2i: number;
+    Argon2id: number;
+  };
+  hash(options: {
+    pass: string | Uint8Array;
+    salt: string | Uint8Array;
+    hashLen?: number;
+  }): Promise<{ hash: Uint8Array; hashHex: string; encoded: string }>;
+}
+
+declare global {
+  var argon2: Argon2Stub;
+}
 
 function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
@@ -21,8 +41,48 @@ function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+function toBytes(value: string | Uint8Array): Uint8Array {
+  if (typeof value === 'string') {
+    return new TextEncoder().encode(value);
+  }
+  return value;
+}
+
+async function stubArgon2Hash(options: {
+  pass: string | Uint8Array;
+  salt: string | Uint8Array;
+  hashLen?: number;
+}): Promise<{ hash: Uint8Array; hashHex: string; encoded: string }> {
+  const passBytes = toBytes(options.pass);
+  const saltBytes = toBytes(options.salt);
+  const input = new Uint8Array(passBytes.length + saltBytes.length);
+  input.set(passBytes);
+  input.set(saltBytes, passBytes.length);
+
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', input));
+  const hash = digest.slice(0, options.hashLen ?? 32);
+
+  return {
+    hash,
+    hashHex: bytesToHex(hash),
+    encoded: bytesToHex(hash),
+  };
+}
+
+function installArgon2Stub(): void {
+  globalThis.argon2 = {
+    ArgonType: {
+      Argon2d: 0,
+      Argon2i: 1,
+      Argon2id: 2,
+    },
+    hash: stubArgon2Hash,
+  };
+}
+
 describe('Serpent-256 Block Cipher', () => {
   beforeAll(async () => {
+    installArgon2Stub();
     await initSerpent();
   });
 
@@ -88,6 +148,7 @@ describe('Serpent-256 Block Cipher', () => {
 
 describe('Serpent-256-CTR', () => {
   beforeAll(async () => {
+    installArgon2Stub();
     await initSerpent();
   });
 
@@ -130,5 +191,117 @@ describe('Serpent-256-CTR', () => {
     ctr2.dispose();
 
     expect(bytesToHex(ct1)).not.toBe(bytesToHex(ct2));
+  });
+
+  it('rejects a tampered ciphertext before any decryption attempt', async () => {
+    const payload = await encrypt('Tamper detection must fail closed.', 'correct horse battery staple');
+    const ciphertext = Uint8Array.from(atob(payload.ciphertext), (char) => char.charCodeAt(0));
+
+    ciphertext[0] ^= 0x01;
+
+    let tamperedBinary = '';
+    for (let i = 0; i < ciphertext.length; i++) {
+      tamperedBinary += String.fromCharCode(ciphertext[i]);
+    }
+
+    const tamperedPayload = {
+      ...payload,
+      ciphertext: btoa(tamperedBinary),
+    };
+
+    await expect(decrypt(tamperedPayload, 'correct horse battery staple')).rejects.toThrow(
+      'Authentication failed — ciphertext has been tampered with'
+    );
+  });
+
+  it('rejects malformed payload fields before KDF/decryption', async () => {
+    await expect(
+      decrypt(
+        {
+          salt: '%%%not-base64%%%',
+          nonce: 'AQIDBAUGBwgJCgsMDQ4PEA==',
+          ciphertext: 'AQID',
+          mac: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHw==',
+          version: 'iron-serpent-v1',
+        },
+        'passphrase'
+      )
+    ).rejects.toThrow('Invalid encrypted payload: base64 field could not be decoded');
+  });
+});
+
+describe('HMAC-SHA256 (mac.ts)', () => {
+  it('deriveMACKey returns a CryptoKey with HMAC algorithm', async () => {
+    const fakeEncKey = new Uint8Array(32).fill(0xab);
+    const macKey = await deriveMACKey(fakeEncKey);
+    expect(macKey).toBeInstanceOf(CryptoKey);
+    expect(macKey.algorithm.name).toBe('HMAC');
+  });
+
+  it('computeMAC returns a 32-byte tag', async () => {
+    const macKey = await deriveMACKey(new Uint8Array(32).fill(0x01));
+    const mac = await computeMAC(macKey, new Uint8Array(64).fill(0x02));
+    expect(mac).toBeInstanceOf(Uint8Array);
+    expect(mac.length).toBe(32);
+  });
+
+  it('verifyMAC returns true for a correct tag', async () => {
+    const macKey = await deriveMACKey(new Uint8Array(32).fill(0x03));
+    const data = new Uint8Array(64).fill(0x04);
+    const mac = await computeMAC(macKey, data);
+    expect(await verifyMAC(macKey, data, mac)).toBe(true);
+  });
+
+  it('verifyMAC returns false when data is modified', async () => {
+    const macKey = await deriveMACKey(new Uint8Array(32).fill(0x05));
+    const data = new Uint8Array(64).fill(0x06);
+    const mac = await computeMAC(macKey, data);
+    data[0] ^= 0x01;
+    expect(await verifyMAC(macKey, data, mac)).toBe(false);
+  });
+
+  it('verifyMAC returns false when mac is modified', async () => {
+    const macKey = await deriveMACKey(new Uint8Array(32).fill(0x07));
+    const data = new Uint8Array(64).fill(0x08);
+    const mac = await computeMAC(macKey, data);
+    mac[0] ^= 0x01;
+    expect(await verifyMAC(macKey, data, mac)).toBe(false);
+  });
+});
+
+describe('KDF (kdf.ts)', () => {
+  beforeAll(() => {
+    installArgon2Stub();
+  });
+
+  it('deriveKey returns a 32-byte key', async () => {
+    const salt = new Uint8Array(16).fill(0xaa);
+    const key = await deriveKey('test-passphrase', salt);
+    expect(key).toBeInstanceOf(Uint8Array);
+    expect(key.length).toBe(32);
+  });
+
+  it('deriveKey is deterministic for the same inputs', async () => {
+    const salt = new Uint8Array(16).fill(0xbb);
+    const key1 = await deriveKey('same-pass', salt);
+    const key2 = await deriveKey('same-pass', salt);
+    expect(key1).toEqual(key2);
+  });
+
+  it('deriveKey produces different output for different passphrases', async () => {
+    const salt = new Uint8Array(16).fill(0xcc);
+    const key1 = await deriveKey('pass-one', salt);
+    const key2 = await deriveKey('pass-two', salt);
+    expect(key1).not.toEqual(key2);
+  });
+
+  it('deriveKey produces different output for different salts', async () => {
+    const key1 = await deriveKey('same', new Uint8Array(16).fill(0x01));
+    const key2 = await deriveKey('same', new Uint8Array(16).fill(0x02));
+    expect(key1).not.toEqual(key2);
+  });
+
+  it('deriveKey rejects a salt of wrong length', async () => {
+    await expect(deriveKey('pass', new Uint8Array(8))).rejects.toThrow('Salt must be 16 bytes');
   });
 });

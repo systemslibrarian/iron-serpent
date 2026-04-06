@@ -37,6 +37,11 @@ export async function runBenchmark(
   crypto.getRandomValues(nonce16);
 
   // --- Serpent-256-CTR benchmark ---
+  onProgress?.('Warming up Serpent-256-CTR...');
+  const warmupCtr = new SerpentCTR();
+  warmupCtr.encrypt(key32, nonce16, data);
+  warmupCtr.dispose();
+
   onProgress?.('Benchmarking Serpent-256-CTR...');
   const serpentTimes: number[] = [];
   for (let i = 0; i < iterations; i++) {
@@ -52,8 +57,13 @@ export async function runBenchmark(
   const serpentMBps = (dataSize / (1024 * 1024)) / (serpentAvgMs / 1000);
 
   // --- AES-256-GCM benchmark ---
-  onProgress?.('Benchmarking AES-256-GCM (Web Crypto)...');
   const aesKey = await crypto.subtle.importKey('raw', key32.slice().buffer as ArrayBuffer, 'AES-GCM', false, ['encrypt']);
+  onProgress?.('Warming up AES-256-GCM...');
+  const warmupIv = new Uint8Array(12);
+  crypto.getRandomValues(warmupIv);
+  await crypto.subtle.encrypt({ name: 'AES-GCM', iv: warmupIv.buffer as ArrayBuffer }, aesKey, data.slice().buffer as ArrayBuffer);
+
+  onProgress?.('Benchmarking AES-256-GCM (Web Crypto)...');
   const aesTimes: number[] = [];
   for (let i = 0; i < iterations; i++) {
     const iv = new Uint8Array(12);

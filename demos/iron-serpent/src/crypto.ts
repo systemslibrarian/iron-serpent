@@ -17,6 +17,9 @@ export interface EncryptedPayload {
   version: string;    // 'iron-serpent-v1'
 }
 
+const PAYLOAD_VERSION = 'iron-serpent-v1';
+const AUTHENTICATION_ERROR = 'Authentication failed — ciphertext has been tampered with';
+
 function toBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
@@ -24,7 +27,12 @@ function toBase64(bytes: Uint8Array): string {
 }
 
 function fromBase64(b64: string): Uint8Array {
-  const binary = atob(b64);
+  let binary = '';
+  try {
+    binary = atob(b64);
+  } catch {
+    throw new Error('Invalid encrypted payload: base64 field could not be decoded');
+  }
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
@@ -41,6 +49,35 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
   return result;
 }
 
+function assertPayloadShape(payload: EncryptedPayload): void {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Invalid encrypted payload: expected an object');
+  }
+
+  const requiredFields: Array<keyof EncryptedPayload> = ['salt', 'nonce', 'ciphertext', 'mac', 'version'];
+  for (const field of requiredFields) {
+    if (typeof payload[field] !== 'string' || payload[field].length === 0) {
+      throw new Error(`Invalid encrypted payload: ${field} must be a non-empty string`);
+    }
+  }
+
+  if (payload.version !== PAYLOAD_VERSION) {
+    throw new Error('Unsupported payload version');
+  }
+}
+
+function assertDecodedLengths(salt: Uint8Array, nonce: Uint8Array, mac: Uint8Array): void {
+  if (salt.length !== 16) {
+    throw new Error('Invalid encrypted payload: salt must decode to 16 bytes');
+  }
+  if (nonce.length !== 16) {
+    throw new Error('Invalid encrypted payload: nonce must decode to 16 bytes');
+  }
+  if (mac.length !== 32) {
+    throw new Error('Invalid encrypted payload: mac must decode to 32 bytes');
+  }
+}
+
 export async function encrypt(plaintext: string, passphrase: string): Promise<EncryptedPayload> {
   const salt = generateSalt();
   const nonce = new Uint8Array(16);
@@ -51,10 +88,16 @@ export async function encrypt(plaintext: string, passphrase: string): Promise<En
 
   const plaintextBytes = new TextEncoder().encode(plaintext);
   const ctr = new SerpentCTR();
-  const ciphertextBytes = ctr.encrypt(encKey, nonce, plaintextBytes);
-  ctr.dispose();
+  let ciphertextBytes: Uint8Array<ArrayBufferLike> = new Uint8Array(0);
+  try {
+    ciphertextBytes = ctr.encrypt(encKey, nonce, plaintextBytes);
+  } finally {
+    ctr.dispose();
+    encKey.fill(0);
+  }
 
-  const macData = concat(salt, nonce, ciphertextBytes);
+  const versionBytes = new TextEncoder().encode(PAYLOAD_VERSION);
+  const macData = concat(salt, nonce, ciphertextBytes, versionBytes);
   const mac = await computeMAC(macKey, macData);
 
   return {
@@ -62,33 +105,40 @@ export async function encrypt(plaintext: string, passphrase: string): Promise<En
     nonce: toBase64(nonce),
     ciphertext: toBase64(ciphertextBytes),
     mac: toBase64(mac),
-    version: 'iron-serpent-v1',
+    version: PAYLOAD_VERSION,
   };
 }
 
 export async function decrypt(payload: EncryptedPayload, passphrase: string): Promise<string> {
-  if (payload.version !== 'iron-serpent-v1') {
-    throw new Error('Unsupported payload version');
-  }
+  assertPayloadShape(payload);
 
   const salt = fromBase64(payload.salt);
   const nonce = fromBase64(payload.nonce);
   const ciphertextBytes = fromBase64(payload.ciphertext);
   const mac = fromBase64(payload.mac);
 
+  assertDecodedLengths(salt, nonce, mac);
+
   const encKey = await deriveKey(passphrase, salt);
   const macKey = await deriveMACKey(encKey);
 
   // Verify MAC BEFORE decryption — Encrypt-then-MAC
-  const macData = concat(salt, nonce, ciphertextBytes);
+  const versionBytes = new TextEncoder().encode(PAYLOAD_VERSION);
+  const macData = concat(salt, nonce, ciphertextBytes, versionBytes);
   const valid = await verifyMAC(macKey, macData, mac);
   if (!valid) {
-    throw new Error('Authentication failed — ciphertext has been tampered with');
+    encKey.fill(0);
+    throw new Error(AUTHENTICATION_ERROR);
   }
 
   const ctr = new SerpentCTR();
-  const plaintextBytes = ctr.decrypt(encKey, nonce, ciphertextBytes);
-  ctr.dispose();
+  let plaintextBytes: Uint8Array<ArrayBufferLike> = new Uint8Array(0);
+  try {
+    plaintextBytes = ctr.decrypt(encKey, nonce, ciphertextBytes);
+  } finally {
+    ctr.dispose();
+    encKey.fill(0);
+  }
 
   return new TextDecoder().decode(plaintextBytes);
 }

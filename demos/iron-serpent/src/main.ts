@@ -87,9 +87,14 @@ async function init() {
   });
 
   // --- Copy ---
-  $('enc-copy').addEventListener('click', () => {
+  $('enc-copy').addEventListener('click', async () => {
     const output = ($('enc-output') as HTMLTextAreaElement).value;
-    if (output) navigator.clipboard.writeText(output);
+    if (!output) return;
+    await navigator.clipboard.writeText(output);
+    const btn = $('enc-copy') as HTMLButtonElement;
+    const prev = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = prev; }, 1500);
   });
 
   // --- Decrypt ---
@@ -114,6 +119,9 @@ async function init() {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes('tampered')) {
         badge.textContent = '✗ Authentication Failed';
+        badge.className = 'badge failed';
+      } else if (e instanceof SyntaxError || msg.startsWith('Invalid encrypted payload') || msg === 'Unsupported payload version') {
+        badge.textContent = '✗ Invalid Payload';
         badge.className = 'badge failed';
       } else {
         badge.textContent = `Error: ${msg}`;
