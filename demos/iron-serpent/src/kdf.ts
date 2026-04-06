@@ -59,7 +59,7 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<U
 
   // Browser: offload to a classic Worker so the UI thread stays responsive.
   return new Promise<Uint8Array>((resolve, reject) => {
-    const worker = new Worker('/kdf-worker.js');
+    const worker = new Worker(`${import.meta.env.BASE_URL}kdf-worker.js`);
     worker.onmessage = (e: MessageEvent<{ hash: number[] } | { error: string }>) => {
       worker.terminate();
       if ('error' in e.data) {

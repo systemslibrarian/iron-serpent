@@ -4,7 +4,7 @@
  * argon2-bundled UMD bundle (which inlines WASM as base64).
  */
 /* global importScripts, argon2 */
-importScripts('/argon2-bundled.min.js');
+importScripts(new URL('argon2-bundled.min.js', self.location.href).href);
 
 self.onmessage = async function (e) {
   var passphrase = e.data.passphrase;
