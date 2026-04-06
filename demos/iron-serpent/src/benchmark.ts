@@ -81,5 +81,7 @@ export async function runBenchmark(
 
   const ratio = aesMBps / serpentMBps;
 
+  key32.fill(0);
+
   return { serpentMBps, aesMBps, ratio };
 }

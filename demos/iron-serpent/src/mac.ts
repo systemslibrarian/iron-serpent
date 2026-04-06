@@ -1,26 +1,41 @@
 /**
- * HMAC-SHA256 Encrypt-then-MAC using Web Crypto API.
+ * Key derivation and HMAC-SHA256 Encrypt-then-MAC using Web Crypto API.
  *
- * The MAC key is derived from the Argon2id encryption key via
- * HKDF-SHA256 with info label "iron-serpent-mac".
+ * Key hierarchy (proper domain separation):
+ *   Argon2id(passphrase, salt) → masterKey
+ *   HKDF-SHA256(masterKey, info="iron-serpent-v1-enc") → encKey  (raw 256-bit)
+ *   HKDF-SHA256(masterKey, info="iron-serpent-v1-mac") → macKey  (CryptoKey HMAC)
+ *   masterKey.fill(0)
+ *
+ * Leaking encKey from WASM memory cannot recover macKey, and vice versa.
  */
 
-const MAC_INFO = new TextEncoder().encode('iron-serpent-mac');
+const ENC_HKDF_INFO = new TextEncoder().encode('iron-serpent-v1-enc');
+const MAC_HKDF_INFO = new TextEncoder().encode('iron-serpent-v1-mac');
 const HKDF_SALT = new Uint8Array(32); // zero-filled per RFC 5869 when no salt
 
-export async function deriveMACKey(encryptionKey: Uint8Array): Promise<CryptoKey> {
+async function hkdfDeriveBits(masterKey: Uint8Array, info: Uint8Array, bits: number): Promise<ArrayBuffer> {
   const baseKey = await crypto.subtle.importKey(
     'raw',
-    encryptionKey.slice().buffer as ArrayBuffer,
+    masterKey.slice().buffer as ArrayBuffer,
     'HKDF',
     false,
     ['deriveBits']
   );
-  const macKeyBits = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: HKDF_SALT, info: MAC_INFO },
+  return crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: HKDF_SALT, info: info.slice().buffer as ArrayBuffer },
     baseKey,
-    256
+    bits
   );
+}
+
+export async function deriveEncKey(masterKey: Uint8Array): Promise<Uint8Array> {
+  const bits = await hkdfDeriveBits(masterKey, ENC_HKDF_INFO, 256);
+  return new Uint8Array(bits);
+}
+
+export async function deriveMACKey(masterKey: Uint8Array): Promise<CryptoKey> {
+  const macKeyBits = await hkdfDeriveBits(masterKey, MAC_HKDF_INFO, 256);
   return crypto.subtle.importKey(
     'raw',
     macKeyBits,

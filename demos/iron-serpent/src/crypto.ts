@@ -7,7 +7,7 @@
  */
 import { SerpentCTR } from './serpent-ctr';
 import { deriveKey, generateSalt } from './kdf';
-import { deriveMACKey, computeMAC, verifyMAC } from './mac';
+import { deriveEncKey, deriveMACKey, computeMAC, verifyMAC } from './mac';
 
 export interface EncryptedPayload {
   salt: string;       // base64
@@ -66,7 +66,7 @@ function assertPayloadShape(payload: EncryptedPayload): void {
   }
 }
 
-function assertDecodedLengths(salt: Uint8Array, nonce: Uint8Array, mac: Uint8Array): void {
+function assertDecodedLengths(salt: Uint8Array, nonce: Uint8Array, mac: Uint8Array, ciphertext: Uint8Array): void {
   if (salt.length !== 16) {
     throw new Error('Invalid encrypted payload: salt must decode to 16 bytes');
   }
@@ -76,6 +76,9 @@ function assertDecodedLengths(salt: Uint8Array, nonce: Uint8Array, mac: Uint8Arr
   if (mac.length !== 32) {
     throw new Error('Invalid encrypted payload: mac must decode to 32 bytes');
   }
+  if (ciphertext.length < 1) {
+    throw new Error('Invalid encrypted payload: ciphertext must not be empty');
+  }
 }
 
 export async function encrypt(plaintext: string, passphrase: string): Promise<EncryptedPayload> {
@@ -83,8 +86,11 @@ export async function encrypt(plaintext: string, passphrase: string): Promise<En
   const nonce = new Uint8Array(16);
   crypto.getRandomValues(nonce);
 
-  const encKey = await deriveKey(passphrase, salt);
-  const macKey = await deriveMACKey(encKey);
+  // Key hierarchy: Argon2id → masterKey → HKDF → separate encKey + macKey
+  const masterKey = await deriveKey(passphrase, salt);
+  const encKey = await deriveEncKey(masterKey);
+  const macKey = await deriveMACKey(masterKey);
+  masterKey.fill(0);
 
   const plaintextBytes = new TextEncoder().encode(plaintext);
   const ctr = new SerpentCTR();
@@ -94,6 +100,7 @@ export async function encrypt(plaintext: string, passphrase: string): Promise<En
   } finally {
     ctr.dispose();
     encKey.fill(0);
+    plaintextBytes.fill(0);
   }
 
   const versionBytes = new TextEncoder().encode(PAYLOAD_VERSION);
@@ -117,10 +124,13 @@ export async function decrypt(payload: EncryptedPayload, passphrase: string): Pr
   const ciphertextBytes = fromBase64(payload.ciphertext);
   const mac = fromBase64(payload.mac);
 
-  assertDecodedLengths(salt, nonce, mac);
+  assertDecodedLengths(salt, nonce, mac, ciphertextBytes);
 
-  const encKey = await deriveKey(passphrase, salt);
-  const macKey = await deriveMACKey(encKey);
+  // Key hierarchy: Argon2id → masterKey → HKDF → separate encKey + macKey
+  const masterKey = await deriveKey(passphrase, salt);
+  const encKey = await deriveEncKey(masterKey);
+  const macKey = await deriveMACKey(masterKey);
+  masterKey.fill(0);
 
   // Verify MAC BEFORE decryption — Encrypt-then-MAC
   const versionBytes = new TextEncoder().encode(PAYLOAD_VERSION);
@@ -140,5 +150,7 @@ export async function decrypt(payload: EncryptedPayload, passphrase: string): Pr
     encKey.fill(0);
   }
 
-  return new TextDecoder().decode(plaintextBytes);
+  const result = new TextDecoder().decode(plaintextBytes);
+  plaintextBytes.fill(0);
+  return result;
 }
