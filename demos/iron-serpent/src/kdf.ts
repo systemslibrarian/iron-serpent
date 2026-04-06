@@ -58,10 +58,10 @@ export async function deriveKey(passphrase: Uint8Array, salt: Uint8Array): Promi
   }
 
   // Browser: offload to a classic Worker so the UI thread stays responsive.
-  // Transfer passphrase and salt as byte arrays — no strings cross the boundary.
+  // Transfer passphrase and salt as ArrayBuffers — no strings or number arrays cross the boundary.
   return new Promise<Uint8Array>((resolve, reject) => {
     const worker = new Worker(`${import.meta.env.BASE_URL}kdf-worker.js`);
-    worker.onmessage = (e: MessageEvent<{ hash: number[] } | { error: string }>) => {
+    worker.onmessage = (e: MessageEvent<{ hash: ArrayBuffer } | { error: string }>) => {
       worker.terminate();
       if ('error' in e.data) {
         reject(new Error(e.data.error));
@@ -73,6 +73,8 @@ export async function deriveKey(passphrase: Uint8Array, salt: Uint8Array): Promi
       worker.terminate();
       reject(new Error(e.message));
     };
-    worker.postMessage({ passphrase: Array.from(passphrase), salt: Array.from(salt) });
+    const passBuf = passphrase.slice().buffer;
+    const saltBuf = salt.slice().buffer;
+    worker.postMessage({ passphrase: passBuf, salt: saltBuf }, [passBuf, saltBuf]);
   });
 }

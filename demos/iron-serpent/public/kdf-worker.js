@@ -19,8 +19,13 @@ self.onmessage = async function (e) {
       parallelism: 1,
       hashLen: 32,
     });
-    self.postMessage({ hash: Array.from(result.hash) });
+    var hashBuf = result.hash.slice().buffer;
+    if (result.hash.fill) result.hash.fill(0);
+    self.postMessage({ hash: hashBuf }, [hashBuf]);
   } catch (err) {
     self.postMessage({ error: err.message || String(err) });
+  } finally {
+    if (passphrase.fill) passphrase.fill(0);
+    if (salt.fill) salt.fill(0);
   }
 };

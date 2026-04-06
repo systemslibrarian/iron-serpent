@@ -158,5 +158,5 @@ export async function decrypt(payload: EncryptedPayload, passphrase: Uint8Array)
     encKey.fill(0);
   }
 
-  return new Uint8Array(plaintextBytes);
+  return plaintextBytes;
 }
