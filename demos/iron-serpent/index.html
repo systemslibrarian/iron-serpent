@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iron Serpent — Serpent-256 Cryptographic Demo</title>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>&#x1F40D; Serpent-256</h1>
+        <p class="subtitle">AES Finalist — 32 Rounds of Conservative Security</p>
+        <p class="attribution">
+          Designed by Eli Biham (Technion, Israel) · Ross Anderson (Cambridge) · Lars Knudsen (DTU)
+        </p>
+      </header>
+
+      <div id="init-status" class="status-banner">Initializing Serpent-256 WASM engine…</div>
+
+      <!-- Encrypt / Decrypt panels -->
+      <section id="crypto-panels">
+        <div class="panel" id="encrypt-panel">
+          <h2>Encrypt</h2>
+          <div class="field">
+            <label for="enc-pass">Passphrase</label>
+            <div class="password-field">
+              <input type="password" id="enc-pass" placeholder="Enter passphrase" autocomplete="off" />
+              <button type="button" id="enc-pass-toggle" class="icon-btn" title="Toggle visibility">&#x1F441;</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="enc-input">Plaintext</label>
+            <textarea id="enc-input" rows="5" placeholder="Enter text to encrypt…"></textarea>
+          </div>
+          <button id="enc-btn" class="primary-btn" disabled>Encrypt</button>
+          <div class="field">
+            <label>
+              Output
+              <span class="toggle-group">
+                <button id="enc-fmt-b64" class="fmt-btn active">Base64</button>
+                <button id="enc-fmt-hex" class="fmt-btn">Hex</button>
+              </span>
+              <button id="enc-copy" class="icon-btn" title="Copy to clipboard">&#x1F4CB;</button>
+            </label>
+            <textarea id="enc-output" rows="8" readonly placeholder="Encrypted payload will appear here…"></textarea>
+          </div>
+          <details class="info-box">
+            <summary>Argon2id Parameters</summary>
+            <ul>
+              <li>Time cost: 3 iterations</li>
+              <li>Memory cost: 65,536 KiB (64 MiB)</li>
+              <li>Parallelism: 1</li>
+              <li>Output: 32 bytes (256-bit key)</li>
+              <li>Salt: 16 bytes (random per operation)</li>
+            </ul>
+          </details>
+        </div>
+
+        <div class="panel" id="decrypt-panel">
+          <h2>Decrypt</h2>
+          <div class="field">
+            <label for="dec-pass">Passphrase</label>
+            <div class="password-field">
+              <input type="password" id="dec-pass" placeholder="Enter passphrase" autocomplete="off" />
+              <button type="button" id="dec-pass-toggle" class="icon-btn" title="Toggle visibility">&#x1F441;</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="dec-input">Encrypted Payload (JSON)</label>
+            <textarea id="dec-input" rows="8" placeholder="Paste EncryptedPayload JSON here…"></textarea>
+          </div>
+          <button id="dec-btn" class="primary-btn" disabled>Decrypt</button>
+          <div id="auth-badge" class="badge hidden"></div>
+          <div class="field">
+            <label for="dec-output">Decrypted Output</label>
+            <textarea id="dec-output" rows="5" readonly placeholder="Decrypted text will appear here…"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visualization -->
+      <section id="vis-section">
+        <h2>Security Margin Visualization</h2>
+        <div id="vis-container"></div>
+      </section>
+
+      <!-- Benchmark -->
+      <section id="bench-section">
+        <h2>Performance Comparison</h2>
+        <p class="bench-note">
+          <strong>Note:</strong> AES-256-GCM benefits from hardware acceleration (AES-NI) via the Web Crypto API.
+          Serpent-256-CTR runs in WebAssembly without hardware acceleration.
+          This comparison reflects real-world browser performance, not purely algorithmic speed.
+        </p>
+        <button id="bench-btn" class="primary-btn">Run Benchmark</button>
+        <div id="bench-progress" class="hidden"></div>
+        <div id="bench-results" class="hidden">
+          <div class="bench-row">
+            <span class="bench-label">Serpent-256-CTR</span>
+            <span id="bench-serpent" class="bench-value">—</span>
+          </div>
+          <div class="bench-row">
+            <span class="bench-label">AES-256-GCM</span>
+            <span id="bench-aes" class="bench-value">—</span>
+          </div>
+          <div class="bench-row">
+            <span class="bench-label">Ratio</span>
+            <span id="bench-ratio" class="bench-value">—</span>
+          </div>
+          <blockquote class="bench-callout">
+            "This performance gap is the price of Serpent's 2.7× security margin.
+            The AES committee chose speed. Serpent chose to survive."
+          </blockquote>
+        </div>
+      </section>
+
+      <!-- About Serpent -->
+      <section id="about-section">
+        <h2>About Serpent</h2>
+        <div class="about-grid">
+          <div class="about-card">
+            <h3>The Designers</h3>
+            <ul>
+              <li><strong>Eli Biham</strong> — Technion, Israel Institute of Technology, Israel.
+                Co-inventor of differential cryptanalysis (with Adi Shamir). Pioneer of block cipher analysis.</li>
+              <li><strong>Ross Anderson</strong> — University of Cambridge, UK.
+                Security engineering researcher. Contributed the overall architecture and design philosophy.</li>
+              <li><strong>Lars Knudsen</strong> — Technical University of Denmark (DTU).
+                Expert in integral and impossible differential cryptanalysis. Key contributor to the S-box design.</li>
+            </ul>
+          </div>
+          <div class="about-card">
+            <h3>Israeli Cryptographic Lineage</h3>
+            <p>
+              Eli Biham studied under <strong>Adi Shamir</strong> (the "S" in RSA) at the Weizmann Institute.
+              Together they developed <strong>differential cryptanalysis</strong> — the technique that broke DES
+              and reshaped how every modern block cipher is designed. Biham brought this deep understanding of
+              attack mechanisms to Serpent's design, building a cipher specifically resistant to the techniques
+              he himself had pioneered.
+            </p>
+          </div>
+          <div class="about-card">
+            <h3>AES Competition Outcome</h3>
+            <p>
+              In the AES competition (1997–2000), Serpent placed <strong>second</strong> to Rijndael.
+              Rijndael received 86 votes to Serpent's 59. NIST's selection criteria weighted performance
+              alongside security. Rijndael was faster with fewer rounds (10/12/14 vs 32), while Serpent
+              prioritized a conservative security margin — using twice as many rounds as needed to block
+              all known shortcut attacks at the time.
+            </p>
+          </div>
+          <div class="about-card">
+            <h3>Specification &amp; Resources</h3>
+            <ul>
+              <li><a href="https://www.cl.cam.ac.uk/~rja14/serpent.html" target="_blank" rel="noopener">Serpent Home Page</a></li>
+              <li><a href="https://www.cl.cam.ac.uk/~rja14/Papers/serpent.pdf" target="_blank" rel="noopener">Algorithm Specification (PDF)</a></li>
+              <li><a href="https://www.cl.cam.ac.uk/~rja14/Papers/serpentcase.pdf" target="_blank" rel="noopener">The Case for Serpent</a></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <p>iron-serpent · Part of the <a href="https://github.com/systemslibrarian/crypto-compare" target="_blank" rel="noopener">crypto-compare</a> portfolio</p>
+        <p class="verse"><em>"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31</em></p>
+      </footer>
+    </div>
+    <script>
+      // Set Argon2 WASM path before module loads
+      self.argon2WasmPath = '/argon2.wasm';
+    </script>
+    <script src="/argon2-bundled.min.js"></script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

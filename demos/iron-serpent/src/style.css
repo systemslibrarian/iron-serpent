@@ -1,0 +1,264 @@
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --gold: #c9a227;
+  --green: #2d6a4f;
+  --blue: #4a90d9;
+  --red: #f85149;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+#app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  color: var(--gold);
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.attribution {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.status-banner {
+  text-align: center;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 2rem;
+  color: var(--text-muted);
+}
+.status-banner.ready { color: #58a6ff; border-color: #1f6feb; }
+.status-banner.error { color: var(--red); border-color: var(--red); }
+
+#crypto-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  #crypto-panels { grid-template-columns: 1fr; }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.panel h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: var(--gold);
+}
+
+.field { margin-bottom: 1rem; }
+
+.field label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.password-field { display: flex; gap: 0.5rem; }
+.password-field input { flex: 1; }
+
+input, textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.primary-btn {
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+.primary-btn:hover { opacity: 0.9; }
+.primary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.icon-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.toggle-group { display: inline-flex; gap: 0; margin-left: auto; }
+
+.fmt-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.fmt-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.fmt-btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.fmt-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+.badge {
+  text-align: center;
+  padding: 0.4rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.badge.verified { background: #0d3320; color: #3fb950; border: 1px solid #238636; }
+.badge.failed { background: #3d1215; color: var(--red); border: 1px solid #da3633; }
+.badge.hidden { display: none; }
+
+.info-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.info-box summary { cursor: pointer; font-weight: 600; }
+.info-box ul { margin-top: 0.5rem; padding-left: 1.2rem; }
+
+section { margin-bottom: 2.5rem; }
+
+section h2 {
+  font-size: 1.4rem;
+  color: var(--gold);
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+#vis-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  min-height: 200px;
+}
+
+.bench-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+#bench-section .primary-btn { width: auto; }
+
+.bench-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+}
+.bench-label { color: var(--text-muted); }
+.bench-value { font-weight: 700; font-family: monospace; color: var(--gold); }
+
+.bench-callout {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.hidden { display: none !important; }
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; } }
+
+.about-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.about-card h3 { color: var(--gold); margin-bottom: 0.75rem; font-size: 1rem; }
+.about-card p { font-size: 0.85rem; color: var(--text-muted); }
+.about-card ul { padding-left: 1.2rem; font-size: 0.85rem; color: var(--text-muted); }
+.about-card li { margin-bottom: 0.5rem; }
+.about-card a { color: var(--blue); text-decoration: none; }
+.about-card a:hover { text-decoration: underline; }
+
+footer {
+  text-align: center;
+  padding: 2rem 0 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+footer a { color: var(--blue); text-decoration: none; }
+.verse { margin-top: 0.5rem; font-size: 0.8rem; }

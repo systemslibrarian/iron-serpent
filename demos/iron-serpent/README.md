@@ -1,0 +1,56 @@
+# Iron Serpent — Serpent-256 Cryptographic Demo
+
+A browser-based cryptographic demo showcasing **Serpent-256**, the AES finalist designed by Eli Biham (Technion, Israel), Ross Anderson (Cambridge), and Lars Knudsen (DTU Denmark).
+
+Part of the [crypto-compare](https://github.com/systemslibrarian/crypto-compare) portfolio.
+
+## What the Demo Does
+
+- **Encrypt/Decrypt**: Enter text and a passphrase to encrypt with Serpent-256-CTR, authenticated with HMAC-SHA256 (Encrypt-then-MAC)
+- **Key Derivation**: Argon2id transforms passphrases into 256-bit keys (time=3, mem=64MiB, parallelism=1)
+- **Round Visualization**: Animated SVG comparing Serpent's 32 rounds vs AES's 10/12/14 rounds, with attack frontier markers
+- **Benchmark**: Live Serpent-256-CTR vs AES-256-GCM throughput comparison (MB/s)
+- **Attribution**: About section covering the designers, Israeli cryptographic lineage, and AES competition history
+
+## Run Locally
+
+```bash
+npm install && npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+## Test
+
+```bash
+npm test
+```
+
+## Serpent Implementation Source
+
+**Package**: [`leviathan-crypto`](https://www.npmjs.com/package/leviathan-crypto) v1.4.0
+- WASM-based Serpent-256 with bitslice S-boxes
+- Zero-dependency WebAssembly cryptography library
+- Provides `Serpent` (ECB block), `SerpentCtr` (CTR mode), and authenticated constructions
+
+## Test Vector Sources
+
+Test vectors are sourced from the official AES submission package:
+- **Specification**: https://www.cl.cam.ac.uk/~rja14/Papers/serpent.pdf
+- **Submission package**: https://www.cl.cam.ac.uk/~rja14/Papers/serpent.tar.gz
+- **Vector files used**: `floppy4/ecb_vk.txt` (variable-key) and `floppy4/ecb_vt.txt` (variable-text), KEYSIZE=256 sections
+
+## Architecture
+
+| Layer | Choice |
+|---|---|
+| Frontend | Vite + TypeScript |
+| Cipher | Serpent-256-CTR via `leviathan-crypto` (WASM) |
+| KDF | Argon2id via `argon2-browser` (WASM) |
+| Authentication | HMAC-SHA256 via Web Crypto API (Encrypt-then-MAC) |
+| Benchmark opponent | AES-256-GCM via Web Crypto API |
+| UI framework | None — vanilla TypeScript |
