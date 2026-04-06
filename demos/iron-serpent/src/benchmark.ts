@@ -6,10 +6,17 @@
  */
 import { SerpentCTR } from './serpent-ctr';
 
+export interface BenchmarkOptions {
+  dataSize?: number;      // bytes, default 1 MiB
+  iterations?: number;    // timed runs per cipher, default 10
+}
+
 interface BenchmarkResult {
   serpentMBps: number;
   aesMBps: number;
   ratio: number;
+  dataSize: number;
+  iterations: number;
 }
 
 function generateRandomData(size: number): Uint8Array {
@@ -25,10 +32,14 @@ function generateRandomData(size: number): Uint8Array {
 }
 
 export async function runBenchmark(
-  onProgress?: (msg: string) => void
+  onProgress?: (msg: string) => void,
+  opts?: BenchmarkOptions
 ): Promise<BenchmarkResult> {
-  const iterations = 10;
-  const dataSize = 1024 * 1024; // 1 MB
+  const iterations = opts?.iterations ?? 10;
+  const dataSize = opts?.dataSize ?? 1024 * 1024;
+  const dataSizeLabel = dataSize >= 1048576
+    ? `${(dataSize / 1048576).toFixed(dataSize % 1048576 === 0 ? 0 : 1)} MB`
+    : `${(dataSize / 1024).toFixed(0)} KB`;
   const data = generateRandomData(dataSize);
 
   const key32 = new Uint8Array(32);
@@ -43,7 +54,7 @@ export async function runBenchmark(
   warmupCtr.dispose();
   onProgress?.('Serpent-256-CTR warm-up done');
 
-  onProgress?.('Serpent-256-CTR — starting 10 runs…');
+  onProgress?.(`Serpent-256-CTR — starting ${iterations} × ${dataSizeLabel} runs…`);
   const serpentTimes: number[] = [];
   for (let i = 0; i < iterations; i++) {
     const ctr = new SerpentCTR();
@@ -65,7 +76,7 @@ export async function runBenchmark(
   await crypto.subtle.encrypt({ name: 'AES-GCM', iv: warmupIv.buffer as ArrayBuffer }, aesKey, data.slice().buffer as ArrayBuffer);
   onProgress?.('AES-256-GCM warm-up done');
 
-  onProgress?.('AES-256-GCM — starting 10 runs…');
+  onProgress?.(`AES-256-GCM — starting ${iterations} × ${dataSizeLabel} runs…`);
   const aesTimes: number[] = [];
   for (let i = 0; i < iterations; i++) {
     const iv = new Uint8Array(12);
@@ -83,5 +94,5 @@ export async function runBenchmark(
 
   key32.fill(0);
 
-  return { serpentMBps, aesMBps, ratio };
+  return { serpentMBps, aesMBps, ratio, dataSize, iterations };
 }

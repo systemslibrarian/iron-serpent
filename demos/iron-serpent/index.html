@@ -95,14 +95,33 @@
           Serpent-256-CTR runs in WebAssembly without hardware acceleration.
           This comparison reflects real-world browser throughput, not algorithmic speed.
         </p>
+        <div class="bench-controls">
+          <div class="bench-control">
+            <label for="bench-data-size">Data size</label>
+            <select id="bench-data-size">
+              <option value="262144">256 KB</option>
+              <option value="1048576" selected>1 MB</option>
+              <option value="4194304">4 MB</option>
+              <option value="16777216">16 MB</option>
+            </select>
+          </div>
+          <div class="bench-control">
+            <label for="bench-iterations">Iterations</label>
+            <select id="bench-iterations">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+        </div>
         <button id="bench-btn" class="primary-btn">Run Benchmark</button>
-        <p class="bench-desc">Encrypts 1 MB of random data across 10 timed runs per cipher (not rounds — both always execute their full round counts). Takes ~5–15 seconds.</p>
         <div id="bench-progress" class="hidden" role="status" aria-live="polite">
           <span id="bench-progress-text"></span>
           <div class="bench-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="bench-progress-fill"></div></div>
         </div>
         <div id="bench-results" class="hidden">
-          <p class="bench-meta">Average throughput across 10 timed runs · 1 MB random plaintext per run · full round count each block</p>
+          <p class="bench-meta" id="bench-meta">Average throughput across <span id="bench-meta-iters">10</span> timed runs · <span id="bench-meta-size">1 MB</span> random plaintext per run · full round count each block</p>
           <div class="bench-row">
             <span class="bench-label">Serpent-256-CTR <span class="bench-sublabel">(32 rounds/block · WASM, no hardware accel)</span></span>
             <span id="bench-serpent" class="bench-value">—</span>

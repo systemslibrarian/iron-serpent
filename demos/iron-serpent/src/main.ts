@@ -151,7 +151,14 @@ async function init() {
   // --- Benchmark ---
   $('bench-btn').addEventListener('click', async () => {
     const btn = $('bench-btn') as HTMLButtonElement;
+    const dataSizeSelect = $('bench-data-size') as HTMLSelectElement;
+    const iterationsSelect = $('bench-iterations') as HTMLSelectElement;
+    const dataSize = parseInt(dataSizeSelect.value, 10);
+    const iterations = parseInt(iterationsSelect.value, 10);
+
     btn.disabled = true;
+    dataSizeSelect.disabled = true;
+    iterationsSelect.disabled = true;
     const progressWrap = $('bench-progress');
     const progressText = $('bench-progress-text');
     const progressFill = $('bench-progress-fill');
@@ -159,9 +166,8 @@ async function init() {
     progressWrap.classList.remove('hidden');
     results.classList.add('hidden');
 
-    // phase 0: warmup serpent (2 steps) + 10 runs serpent = 12
-    // phase 1: warmup aes (2 steps) + 10 runs aes = 12  → total 24 steps
-    const TOTAL_STEPS = 24;
+    // warmup serpent (2) + N runs serpent + warmup aes (2) + N runs aes
+    const TOTAL_STEPS = 4 + iterations * 2;
     let step = 0;
     function advance(label: string) {
       step++;
@@ -174,7 +180,14 @@ async function init() {
     try {
       const r = await runBenchmark((msg) => {
         advance(msg);
-      });
+      }, { dataSize, iterations });
+
+      const sizeLabel = dataSize >= 1048576
+        ? `${(dataSize / 1048576).toFixed(dataSize % 1048576 === 0 ? 0 : 1)} MB`
+        : `${(dataSize / 1024).toFixed(0)} KB`;
+
+      $('bench-meta-iters').textContent = String(iterations);
+      $('bench-meta-size').textContent = sizeLabel;
       $('bench-serpent').textContent = `${r.serpentMBps.toFixed(1)} MB/s`;
       $('bench-aes').textContent = `${r.aesMBps.toFixed(1)} MB/s`;
       $('bench-ratio').textContent = `AES is ${r.ratio.toFixed(1)}× faster`;
@@ -183,6 +196,8 @@ async function init() {
       progressText.textContent = `Benchmark error: ${e instanceof Error ? e.message : e}`;
     } finally {
       btn.disabled = false;
+      dataSizeSelect.disabled = false;
+      iterationsSelect.disabled = false;
       progressWrap.classList.add('hidden');
     }
   });

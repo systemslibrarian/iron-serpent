@@ -222,10 +222,45 @@ section h2 {
 
 #bench-section .primary-btn { width: auto; }
 
-.bench-desc {
-  font-size: 0.85rem;
+.bench-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.bench-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bench-control label {
+  font-size: 0.8rem;
   color: var(--text-muted);
-  margin: 0.5rem 0 1rem;
+}
+
+.bench-control select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.bench-control select:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+
+.bench-control select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 #bench-progress {
