@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/iron-serpent/',
+  base: '/crypto-lab-iron-serpent/',
   optimizeDeps: {
     exclude: ['argon2-browser'],
   },

@@ -2,7 +2,11 @@
 
 A browser-based cryptographic demo showcasing **Serpent-256**, the AES finalist designed by Eli Biham (Technion, Israel), Ross Anderson (Cambridge), and Lars Knudsen (DTU Denmark).
 
-Part of the [crypto-compare](https://github.com/systemslibrarian/crypto-compare) portfolio.
+Part of the [crypto-lab-iron-serpent](https://github.com/systemslibrarian/crypto-lab-iron-serpent) project.
+
+## Live Demo
+
+https://systemslibrarian.github.io/crypto-lab-iron-serpent/
 
 ## What the Demo Does
 
