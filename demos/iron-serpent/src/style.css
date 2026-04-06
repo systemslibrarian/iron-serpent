@@ -4,7 +4,7 @@
   --border: #30363d;
   --text: #e6edf3;
   --text-muted: #8b949e;
-  --gold: #c9a227;
+  --gold: #d4a72c;
   --green: #2d6a4f;
   --blue: #4a90d9;
   --red: #f85149;
@@ -112,8 +112,17 @@ input, textarea {
 }
 
 input:focus, textarea:focus {
-  outline: none;
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
   border-color: var(--gold);
+}
+
+/* Universal focus-visible for keyboard users */
+button:focus-visible,
+a:focus-visible,
+details > summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 .primary-btn {
@@ -135,6 +144,11 @@ input:focus, textarea:focus {
   background: none;
   border: 1px solid var(--border);
   color: var(--text);
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.4rem 0.6rem;
   border-radius: var(--radius);
   cursor: pointer;

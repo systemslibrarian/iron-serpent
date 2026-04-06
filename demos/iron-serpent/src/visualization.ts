@@ -18,7 +18,7 @@ const ciphers: CipherVis[] = [
     totalRounds: 32,
     attackFrontier: 12,
     attackLabel: 'Best known attack: 12 rounds',
-    color: '#c9a227',
+    color: '#d4a72c',
     marginColor: '#2d6a4f',
   },
   {
@@ -64,6 +64,8 @@ export function renderVisualization(container: HTMLElement): void {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('width', '100%');
     svg.setAttribute('viewBox', `0 0 ${containerWidth} ${svgHeight}`);
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Security margin visualization comparing Serpent-256 (32 rounds, 20 unbroken) versus AES-128 (10 rounds, 3 unbroken), AES-192 (12 rounds, 4 unbroken), and AES-256 (14 rounds, 5 unbroken). Serpent has 2.7 times the safety margin of AES-256.');
     svg.style.maxWidth = '100%';
 
     // Title
@@ -181,7 +183,7 @@ export function renderVisualization(container: HTMLElement): void {
     callout.setAttribute('x', `${containerWidth / 2}`);
     callout.setAttribute('y', `${svgHeight - 15}`);
     callout.setAttribute('text-anchor', 'middle');
-    callout.setAttribute('fill', '#c9a227');
+    callout.setAttribute('fill', '#d4a72c');
     callout.setAttribute('font-size', '13');
     callout.setAttribute('font-style', 'italic');
     callout.textContent = "Serpent's unbroken margin is 2.7\u00D7 wider than AES-256";

@@ -16,7 +16,7 @@
         </p>
       </header>
 
-      <div id="init-status" class="status-banner">Initializing Serpent-256 WASM engine…</div>
+      <div id="init-status" class="status-banner" role="status" aria-live="polite">Initializing Serpent-256 WASM engine…</div>
 
       <!-- Encrypt / Decrypt panels -->
       <section id="crypto-panels">
@@ -26,14 +26,14 @@
             <label for="enc-pass">Passphrase</label>
             <div class="password-field">
               <input type="password" id="enc-pass" placeholder="Enter passphrase" autocomplete="off" />
-              <button type="button" id="enc-pass-toggle" class="icon-btn" title="Toggle visibility">&#x1F441;</button>
+              <button type="button" id="enc-pass-toggle" class="icon-btn" title="Toggle visibility" aria-label="Toggle passphrase visibility">&#x1F441;</button>
             </div>
           </div>
           <div class="field">
             <label for="enc-input">Plaintext</label>
             <textarea id="enc-input" rows="5" placeholder="Enter text to encrypt…"></textarea>
           </div>
-          <button id="enc-btn" class="primary-btn" disabled>Encrypt</button>
+          <button id="enc-btn" class="primary-btn" disabled>Encrypt (full 32 rounds)</button>
           <div class="field">
             <label>
               Output
@@ -41,7 +41,7 @@
                 <button id="enc-fmt-b64" class="fmt-btn active">Base64</button>
                 <button id="enc-fmt-hex" class="fmt-btn">Hex</button>
               </span>
-              <button id="enc-copy" class="icon-btn" title="Copy to clipboard">&#x1F4CB;</button>
+              <button id="enc-copy" class="icon-btn" title="Copy to clipboard" aria-label="Copy output to clipboard">&#x1F4CB;</button>
             </label>
             <textarea id="enc-output" rows="8" readonly placeholder="Encrypted payload will appear here…"></textarea>
           </div>
@@ -63,15 +63,15 @@
             <label for="dec-pass">Passphrase</label>
             <div class="password-field">
               <input type="password" id="dec-pass" placeholder="Enter passphrase" autocomplete="off" />
-              <button type="button" id="dec-pass-toggle" class="icon-btn" title="Toggle visibility">&#x1F441;</button>
+              <button type="button" id="dec-pass-toggle" class="icon-btn" title="Toggle visibility" aria-label="Toggle passphrase visibility">&#x1F441;</button>
             </div>
           </div>
           <div class="field">
             <label for="dec-input">Encrypted Payload (JSON)</label>
             <textarea id="dec-input" rows="8" placeholder="Paste EncryptedPayload JSON here…"></textarea>
           </div>
-          <button id="dec-btn" class="primary-btn" disabled>Decrypt</button>
-          <div id="auth-badge" class="badge hidden"></div>
+          <button id="dec-btn" class="primary-btn" disabled>Decrypt (full 32 rounds)</button>
+          <div id="auth-badge" class="badge hidden" role="status" aria-live="assertive"></div>
           <div class="field">
             <label for="dec-output">Decrypted Output</label>
             <textarea id="dec-output" rows="5" readonly placeholder="Decrypted text will appear here…"></textarea>
@@ -89,24 +89,26 @@
       <section id="bench-section">
         <h2>Performance Comparison</h2>
         <p class="bench-note">
-          <strong>Note:</strong> AES-256-GCM benefits from hardware acceleration (AES-NI) via the Web Crypto API.
+          <strong>Note:</strong> Both ciphers execute every round of their full specification —
+          Serpent-256-CTR runs all 32 rounds per block, AES-256-GCM runs all 14.
+          AES-256-GCM benefits from hardware acceleration (AES-NI) via the Web Crypto API.
           Serpent-256-CTR runs in WebAssembly without hardware acceleration.
-          This comparison reflects real-world browser performance, not purely algorithmic speed.
+          This comparison reflects real-world browser throughput, not algorithmic speed.
         </p>
         <button id="bench-btn" class="primary-btn">Run Benchmark</button>
-        <p class="bench-desc">Encrypts 1 MB of random data 10 times with each cipher and reports average throughput. Takes ~5–15 seconds depending on device.</p>
-        <div id="bench-progress" class="hidden">
+        <p class="bench-desc">Encrypts 1 MB of random data across 10 timed runs per cipher (not rounds — both always execute their full round counts). Takes ~5–15 seconds.</p>
+        <div id="bench-progress" class="hidden" role="status" aria-live="polite">
           <span id="bench-progress-text"></span>
-          <div class="bench-progress-bar"><div id="bench-progress-fill"></div></div>
+          <div class="bench-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="bench-progress-fill"></div></div>
         </div>
         <div id="bench-results" class="hidden">
-          <p class="bench-meta">Average throughput across 10 runs · 1 MB random plaintext per run</p>
+          <p class="bench-meta">Average throughput across 10 timed runs · 1 MB random plaintext per run · full round count each block</p>
           <div class="bench-row">
-            <span class="bench-label">Serpent-256-CTR <span class="bench-sublabel">(WASM, no hardware accel)</span></span>
+            <span class="bench-label">Serpent-256-CTR <span class="bench-sublabel">(32 rounds/block · WASM, no hardware accel)</span></span>
             <span id="bench-serpent" class="bench-value">—</span>
           </div>
           <div class="bench-row">
-            <span class="bench-label">AES-256-GCM <span class="bench-sublabel">(Web Crypto, AES-NI accelerated)</span></span>
+            <span class="bench-label">AES-256-GCM <span class="bench-sublabel">(14 rounds/block · Web Crypto, AES-NI accelerated)</span></span>
             <span id="bench-aes" class="bench-value">—</span>
           </div>
           <div class="bench-row">

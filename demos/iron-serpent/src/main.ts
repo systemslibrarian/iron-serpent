@@ -60,7 +60,7 @@ async function init() {
 
     const btn = $('enc-btn') as HTMLButtonElement;
     btn.disabled = true;
-    btn.textContent = 'Encrypting…';
+    btn.textContent = 'Encrypting (32 rounds per block)…';
     try {
       lastPayload = await encrypt(text, pass);
       ($('enc-output') as HTMLTextAreaElement).value = formatPayload(lastPayload, outputFormat);
@@ -68,7 +68,7 @@ async function init() {
       ($('enc-output') as HTMLTextAreaElement).value = `Error: ${e instanceof Error ? e.message : e}`;
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Encrypt';
+      btn.textContent = 'Encrypt (full 32 rounds)';
     }
   });
 
@@ -105,7 +105,7 @@ async function init() {
 
     const btn = $('dec-btn') as HTMLButtonElement;
     btn.disabled = true;
-    btn.textContent = 'Decrypting…';
+    btn.textContent = 'Decrypting (32 rounds per block)…';
     const badge = $('auth-badge');
 
     try {
@@ -129,7 +129,7 @@ async function init() {
       }
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Decrypt';
+      btn.textContent = 'Decrypt (full 32 rounds)';
     }
   });
 
@@ -154,7 +154,9 @@ async function init() {
     function advance(label: string) {
       step++;
       progressText.textContent = label;
-      progressFill.style.width = `${Math.round((step / TOTAL_STEPS) * 100)}%`;
+      const pct = Math.round((step / TOTAL_STEPS) * 100);
+      progressFill.style.width = `${pct}%`;
+      progressFill.parentElement?.setAttribute('aria-valuenow', `${pct}`);
     }
 
     try {
