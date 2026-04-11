@@ -12,11 +12,11 @@
 }
 
 html[data-theme='light'] {
-  --bg: Canvas;
-  --surface: color-mix(in srgb, Canvas 96%, var(--gold) 4%);
-  --border: color-mix(in srgb, CanvasText 20%, Canvas 80%);
-  --text: CanvasText;
-  --text-muted: color-mix(in srgb, CanvasText 58%, Canvas 42%);
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-muted: #59636e;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -383,9 +383,3 @@ footer {
   font-size: 0.85rem;
 }
 footer a { color: var(--blue); text-decoration: none; }
-.verse { margin-top: 0.5rem; font-size: 0.8rem; }
-
-body > footer {
-  border-top: none;
-  color: var(--text-muted);
-}
