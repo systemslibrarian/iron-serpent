@@ -17,7 +17,12 @@ html[data-theme='light'] {
   --border: #d0d7de;
   --text: #1f2328;
   --text-muted: #59636e;
+  --red: #cf222e;
 }
+
+html[data-theme='light'] .status-banner.ready { color: #0969da; border-color: #218bff; }
+html[data-theme='light'] .badge.verified { background: #dafbe1; color: #116329; border-color: #4ac26b; }
+html[data-theme='light'] .badge.failed { background: #ffebe9; color: #cf222e; border-color: #ff8182; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
