@@ -12,6 +12,25 @@ function $(id: string): HTMLElement {
   return document.getElementById(id)!;
 }
 
+function getTheme(): 'dark' | 'light' {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
+function syncThemeToggle(theme = getTheme()) {
+  const toggle = $('theme-toggle') as HTMLButtonElement;
+  const darkMode = theme === 'dark';
+  toggle.textContent = darkMode ? '🌙' : '☀️';
+  const label = darkMode ? 'Switch to light mode' : 'Switch to dark mode';
+  toggle.setAttribute('aria-label', label);
+  toggle.title = label;
+}
+
+function setTheme(theme: 'dark' | 'light') {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  syncThemeToggle(theme);
+}
+
 function toHexString(b64: string): string {
   const binary = atob(b64);
   return Array.from(binary, (c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
@@ -31,6 +50,11 @@ function formatPayload(p: EncryptedPayload, fmt: 'base64' | 'hex'): string {
 }
 
 async function init() {
+  syncThemeToggle();
+  ($('theme-toggle') as HTMLButtonElement).addEventListener('click', () => {
+    setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+  });
+
   const status = $('init-status');
   try {
     await initSerpent();

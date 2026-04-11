@@ -11,6 +11,14 @@
   --radius: 8px;
 }
 
+html[data-theme='light'] {
+  --bg: Canvas;
+  --surface: color-mix(in srgb, Canvas 96%, var(--gold) 4%);
+  --border: color-mix(in srgb, CanvasText 20%, Canvas 80%);
+  --text: CanvasText;
+  --text-muted: color-mix(in srgb, CanvasText 58%, Canvas 42%);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -27,8 +35,10 @@ body {
 }
 
 header {
+  position: relative;
   text-align: center;
   margin-bottom: 2rem;
+  padding-right: 3.5rem;
 }
 
 header h1 {
@@ -153,6 +163,29 @@ details > summary:focus-visible {
   border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.9rem;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.theme-toggle:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg);
 }
 
 .toggle-group { display: inline-flex; gap: 0; margin-left: auto; }
@@ -351,3 +384,8 @@ footer {
 }
 footer a { color: var(--blue); text-decoration: none; }
 .verse { margin-top: 0.5rem; font-size: 0.8rem; }
+
+body > footer {
+  border-top: none;
+  color: var(--text-muted);
+}
